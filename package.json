@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit --project tsconfig.base.json"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@types/node": "^20.11.0",
     "socket.io-client": "^4.8.3",
     "typescript": "^5.4.2"
