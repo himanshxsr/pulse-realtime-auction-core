@@ -15,7 +15,15 @@ import type {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env['NEXT_PUBLIC_SOCKET_URL'] || 'http://localhost:4000';
+const getSocketUrl = (): string => {
+  if (process.env['NEXT_PUBLIC_SOCKET_URL']) {
+    return process.env['NEXT_PUBLIC_SOCKET_URL'];
+  }
+  if (typeof window !== 'undefined') {
+    return `${window.location.protocol}//${window.location.hostname}:4000`;
+  }
+  return 'http://localhost:4000';
+};
 
 export interface UseAuctionSocketReturn {
   auctionState: AuctionState | null;
@@ -107,7 +115,10 @@ export function useAuctionSocket(auctionId: string): UseAuctionSocketReturn {
     if (!auctionId) return;
 
     setIsLoading(true);
-    const socket: Socket = io(SOCKET_URL, {
+    const targetUrl = getSocketUrl();
+    console.log('[Client] Connecting to gateway:', targetUrl, 'for auction:', auctionId);
+
+    const socket: Socket = io(targetUrl, {
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
