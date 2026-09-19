@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { ShieldCheck } from 'lucide-react';
 import React from 'react';
+import { GuideHeaderButton } from '../components/auction/GuideHeaderButton';
 import { UserChip } from '../components/UserChip';
 import './globals.css';
 
@@ -36,6 +37,8 @@ export default function RootLayout({
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
               <span>Verified Institutional Escrow</span>
             </div>
+
+            <GuideHeaderButton />
 
             <UserChip />
           </div>
