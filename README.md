@@ -2,6 +2,8 @@
 
 > **A high-concurrency, real-time live auction engine** built from scratch to eliminate race conditions, bid collisions, and bot sniping during peak bidding wars.
 
+🌐 **Live Interactive Terminal**: [https://auction.himansh.co.in](https://auction.himansh.co.in) *(Production deployment on AWS EC2 with automatic HTTPS)*
+
 Inspired by the intensity of high-stakes live auctions (like the IPL player auction and luxury asset bidding), this project demonstrates how to handle high-frequency concurrent bidding under sub-millisecond execution budgets without database deadlocks.
 
 ---
@@ -37,25 +39,28 @@ Instead of writing directly to a database on every bid, **Pulse** uses a decoupl
 4. **Humanized Live Bidding Terminal (Next.js 15)**
    - Real-time dual-tone terminal with high-precision countdown timer (`requestAnimationFrame`).
    - Dynamic Indian Lakhs/Crores increment scaling (₹25k, ₹50k, ₹10L, ₹50L base steps).
-   - One-click bidding paddles, custom bid input box, auto-bid proxy agent modal, multi-lot carousel, live commentary stream, and synthetic Web Audio sound effects.
+   - One-click bidding paddles, custom bid input box, auto-bid proxy agent modal, multi-lot carousel, live commentary stream, and interactive recruiter testing guide modal.
 
 ---
 
 ## Architecture Overview
 
 ```
-[ Next.js 15 Web Terminal ] ──(WebSocket)──► [ Socket.io Ingress Gateway ]
-                                                      │
-                                                      ▼
-                                       [ Redis 7 Engine (Lua Script) ]
-                                            │                 │
-                               (Pub/Sub Broadcast)     (Order Book ZSET)
-                                            │
-                                            ▼
-                               [ BullMQ Settlement Queue ]
-                                            │
-                                            ▼
-                                [ PostgreSQL 16 DB (Settled Bids) ]
+[ Next.js 15 Web Terminal ] ──(WebSocket/HTTPS)──► [ Caddy Reverse Proxy ]
+                                                             │
+                                                             ▼
+                                                [ Socket.io Ingress Gateway ]
+                                                             │
+                                                             ▼
+                                              [ Redis 7 Engine (Lua Script) ]
+                                                   │                 │
+                                      (Pub/Sub Broadcast)     (Order Book ZSET)
+                                                   │
+                                                   ▼
+                                      [ BullMQ Settlement Queue ]
+                                                   │
+                                                   ▼
+                                       [ PostgreSQL 16 DB (Settled Bids) ]
 ```
 
 ---
@@ -66,6 +71,8 @@ Instead of writing directly to a database on every bid, **Pulse** uses a decoupl
 * **Backend Gateway:** Node.js, Express, Socket.io (with Redis Adapter)
 * **Execution Engine:** Redis 7 (Atomic Lua Scripts)
 * **Async Worker:** BullMQ, PostgreSQL 16 (`pg`)
+* **Reverse Proxy & Security:** Caddy v2 (Automatic HTTPS / Let's Encrypt TLS)
+* **Infrastructure:** AWS EC2 (`ap-south-1`), Docker Compose
 * **Monorepo Architecture:** npm Workspaces (`apps/web`, `apps/server`, `apps/worker`, `packages/shared-types`)
 
 ---
@@ -77,20 +84,24 @@ Instead of writing directly to a database on every bid, **Pulse** uses a decoupl
 * Node.js >= 18
 * Docker & Docker Compose
 
-### 1. Start Infrastructure (PostgreSQL & Redis)
+### 1. Production Link
+
+Visit **[https://auction.himansh.co.in](https://auction.himansh.co.in)** to test the live platform.
+
+### 2. Local Setup (PostgreSQL & Redis)
 
 ```bash
 docker-compose -f infra/docker-compose.yml up -d
 ```
 
-### 2. Install Dependencies & Build Packages
+### 3. Install Dependencies & Build Packages
 
 ```bash
 npm install
 npm run build --workspace=packages/shared-types
 ```
 
-### 3. Run Development Servers
+### 4. Run Development Servers
 
 Run services in separate terminal windows:
 
@@ -105,13 +116,17 @@ npm run dev --workspace=apps/worker
 npm run dev --workspace=apps/web
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in multiple browser tabs to simulate concurrent bidders!
+Open [http://localhost:3000](http://localhost:3000) or [https://auction.himansh.co.in](https://auction.himansh.co.in) in multiple browser tabs / Incognito windows to simulate concurrent bidders!
 
 ---
 
-## Key API Endpoints
+## Key Features & Scenarios
 
-* `POST /api/auction/:id/reset` - Resets demo auction timer to 5 minutes ACTIVE state for testing.
+1. ⚡ **Sub-Millisecond Atomic Execution**: Redis Lua script resolves bids in &lt;1ms.
+2. 👥 **Multiplayer Bidding War**: Simultaneous bidders receive real-time outbid notifications and 1-click counter-bids.
+3. ⏱️ **Fair-Play Soft-Close (Anti-Sniping)**: Bids placed under 30s trigger automatic +60s clock extensions.
+4. 🤖 **Auto-Bid Proxy Agent**: Automated counter-bidding up to user-defined cap.
+5. 🔄 **Native WebSocket Auction Reset**: Broadcasts instant clock resets to all connected clients.
 
 ---
 
