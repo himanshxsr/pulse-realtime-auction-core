@@ -1,4 +1,5 @@
 import type {
+  AuctionExtendedPayload,
   AuctionState,
   BidAcceptedPayload,
   BidSubmissionPayload,
@@ -16,14 +17,15 @@ interface TestUser {
   latestState?: AuctionState;
   acceptedBids: BidAcceptedPayload[];
   outbidAlerts: OutbidAlertPayload[];
+  extendedEvents: AuctionExtendedPayload[];
 }
 
 const testUsers: TestUser[] = [
-  { id: 'bidder_aakash', name: 'Aakash (Mumbai)', acceptedBids: [], outbidAlerts: [] },
-  { id: 'bidder_priya', name: 'Priya (Bengaluru)', acceptedBids: [], outbidAlerts: [] },
-  { id: 'bidder_vikram', name: 'Vikram (Delhi)', acceptedBids: [], outbidAlerts: [] },
-  { id: 'bidder_ananya', name: 'Ananya (Kolkata)', acceptedBids: [], outbidAlerts: [] },
-  { id: 'bidder_rohan', name: 'Rohan (Ahmedabad)', acceptedBids: [], outbidAlerts: [] },
+  { id: 'bidder_aakash', name: 'Aakash (Mumbai)', acceptedBids: [], outbidAlerts: [], extendedEvents: [] },
+  { id: 'bidder_priya', name: 'Priya (Bengaluru)', acceptedBids: [], outbidAlerts: [], extendedEvents: [] },
+  { id: 'bidder_vikram', name: 'Vikram (Delhi)', acceptedBids: [], outbidAlerts: [], extendedEvents: [] },
+  { id: 'bidder_ananya', name: 'Ananya (Kolkata)', acceptedBids: [], outbidAlerts: [], extendedEvents: [] },
+  { id: 'bidder_rohan', name: 'Rohan (Ahmedabad)', acceptedBids: [], outbidAlerts: [], extendedEvents: [] },
 ];
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -43,7 +45,7 @@ async function runSimulation() {
     });
 
     await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error(`Timeout connecting ${u.name}`)), 5000);
+      const timeout = setTimeout(() => reject(new Error(`Timeout connecting ${u.name}`)), 10000);
       u.socket!.on('connect', () => {
         clearTimeout(timeout);
         u.socket!.emit('auction:join', { auctionId: AUCTION_ID, userId: u.id });
@@ -65,10 +67,16 @@ async function runSimulation() {
       u.outbidAlerts.push(payload);
     });
 
+    u.socket!.on('auction:extended', (payload: AuctionExtendedPayload) => {
+      u.extendedEvents.push(payload);
+    });
+
     console.log(`  ✓ ${u.name} connected [Socket ID: ${u.socket.id}]`);
   }
 
-  await sleep(1000);
+  // Initial reset to guarantee clean test state
+  testUsers[0]!.socket!.emit('auction:reset', { auctionId: AUCTION_ID, durationMinutes: 5 });
+  await sleep(1200);
 
   // Verify initial state received by all
   for (const u of testUsers) {
@@ -160,8 +168,12 @@ async function runSimulation() {
     `  ✅ High-value custom bid accepted across all clients! New Price: ₹${(customAmountCents / 100).toLocaleString('en-IN')}\n`
   );
 
-  // STEP 5: Bidder 4 (Ananya) submits bid & verifies state broadcast
-  console.log('📌 STEP 5: Bidder 4 (Ananya) raises paddle...');
+  // STEP 5: Bidder 4 (Ananya) triggers anti-sniping (clock < 30s) -> verify auction:extended (+60s)
+  console.log('📌 STEP 5: Bidder 4 (Ananya) triggers anti-sniping (clock < 30s)...');
+  // First, set auction duration to 20 seconds (< 30s snipe window)
+  testUsers[4]!.socket!.emit('auction:reset', { auctionId: AUCTION_ID, durationMinutes: 0.35 });
+  await sleep(1200);
+
   const bid4Amount =
     testUsers[3]!.latestState!.currentPriceCents + testUsers[3]!.latestState!.minIncrementCents;
 
@@ -174,10 +186,17 @@ async function runSimulation() {
   };
 
   testUsers[3]!.socket!.emit('auction:bid', payload4);
-  await sleep(1000);
+  await sleep(1200);
 
+  for (const u of testUsers) {
+    const hasExtendedSignal =
+      u.extendedEvents.length > 0 || u.acceptedBids.some((b) => b.wasExtended);
+    if (!hasExtendedSignal) {
+      throw new Error(`❌ ${u.name} did NOT receive anti-sniping extension (+60s) signal!`);
+    }
+  }
   console.log(
-    `  ✅ Bidder 4 bid accepted! Current Leader: ${testUsers[3]!.latestState?.leaderName}\n`
+    `  ✅ Anti-sniping triggered! All 5 bidders received anti-sniping extension (+60s) confirmation.\n`
   );
 
   // STEP 6: Bidder 5 (Rohan) triggers Native WebSocket Reset
@@ -192,7 +211,7 @@ async function runSimulation() {
       );
     }
   }
-  console.log(`  ✅ All 5 bidders received reset auction state! Status: ACTIVE, Duration: 5m\n`);
+  console.log(`  ✅ All 5 bidders received reset auction state! Status: ACTIVE, Clock: 5:00\n`);
 
   // Cleanup connections
   console.log('🧹 Cleaning up socket connections...');

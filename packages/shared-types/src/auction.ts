@@ -74,6 +74,7 @@ export interface BidResult {
   previousLeaderId?: string | null;
   endTime?: number;
   wasExtended?: boolean;
+  antiSnipeCount?: number;
   bidCount?: number;
   reason?: string;
 }

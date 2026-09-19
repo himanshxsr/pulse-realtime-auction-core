@@ -48,6 +48,13 @@ export interface LeaveRoomPayload {
   auctionId: string;
 }
 
+export interface AuctionExtendedPayload {
+  auctionId: string;
+  newEndTime: number;
+  extendedBySeconds: number;
+  antiSnipeCount?: number;
+}
+
 export interface ClientToServerEvents {
   'room:join': (payload: JoinRoomPayload) => void;
   'auction:join': (payload: JoinRoomPayload) => void;
@@ -63,6 +70,7 @@ export interface ServerToClientEvents {
   'bid:accepted': (payload: BidAcceptedPayload) => void;
   'bid:rejected': (payload: BidRejectedPayload) => void;
   'bid:outbid': (payload: OutbidAlertPayload) => void;
+  'auction:extended': (payload: AuctionExtendedPayload) => void;
   'auction:commentary': (commentary: CommentaryMessage) => void;
   'room:count': (payload: RoomCountPayload) => void;
   'auction:ended': (payload: AuctionEndedPayload) => void;

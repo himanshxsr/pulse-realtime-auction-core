@@ -116,6 +116,13 @@ export function setupSocketGateway(httpServer: HttpServer): Server<ClientToServe
           io.to(roomKey).emit('auction:commentary', commentary);
 
           if (result.wasExtended) {
+            io.to(roomKey).emit('auction:extended', {
+              auctionId: payload.auctionId,
+              newEndTime: result.endTime ?? Date.now() + 60000,
+              extendedBySeconds: 60,
+              antiSnipeCount: result.antiSnipeCount,
+            });
+
             const extensionCommentary: CommentaryMessage = {
               id: `comm-ext-${Date.now()}`,
               auctionId: payload.auctionId,
