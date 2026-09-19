@@ -5,13 +5,17 @@ import path from 'node:path';
 async function testGodaddyMcp() {
   console.log('⚡ Initializing GoDaddy MCP Client test...');
 
+  const apiKey = process.env['GODADDY_API_KEY'] || '3mM44YwfTPf3bk_RPkP5VYQ5mkR75Aj8qt2JG';
+  const apiSecret = process.env['GODADDY_API_SECRET'] || '93cXW5oYCuj2eAmf7SiXQp';
+  const godaddyEnv = process.env['GODADDY_ENV'] || 'production';
+
   const transport = new StdioClientTransport({
     command: 'npx',
     args: ['-y', 'tsx', path.join(process.cwd(), 'scripts/godaddy-mcp-server.ts')],
     env: {
-      GODADDY_API_KEY: '3mM44YwfTPf3bk_RPkP5VYQ5mkR75Aj8qt2JG',
-      GODADDY_API_SECRET: '93cXW5oYCuj2eAmf7SiXQp',
-      GODADDY_ENV: 'production',
+      GODADDY_API_KEY: apiKey,
+      GODADDY_API_SECRET: apiSecret,
+      GODADDY_ENV: godaddyEnv,
     },
   });
 

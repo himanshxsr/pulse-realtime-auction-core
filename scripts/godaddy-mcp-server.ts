@@ -11,6 +11,13 @@ const baseUrl =
     ? 'https://api.ote-godaddy.com'
     : 'https://api.godaddy.com';
 
+function getAuthHeader(): string {
+  if (apiKey && apiSecret && apiSecret.trim() !== '') {
+    return `sso-key ${apiKey.trim()}:${apiSecret.trim()}`;
+  }
+  return `Bearer ${apiKey.trim()}`;
+}
+
 const server = new McpServer({
   name: 'godaddy-mcp-server',
   version: '1.0.0',
@@ -28,18 +35,33 @@ server.tool(
     ttl: z.number().default(600).describe('Time To Live in seconds'),
   },
   async ({ domain, type, name, data, ttl }) => {
+    const authHeader = getAuthHeader();
     const url = `${baseUrl}/v1/domains/${domain}/records/${type}/${name}`;
     console.error(`[GoDaddy MCP] Sending PUT to ${url}`);
 
     try {
-      const response = await fetch(url, {
+      let response = await fetch(url, {
         method: 'PUT',
         headers: {
-          Authorization: `sso-key ${apiKey}:${apiSecret}`,
+          Authorization: authHeader,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify([{ data, ttl }]),
       });
+
+      if (!response.ok && response.status === 404) {
+        // Fallback: try PATCH /v1/domains/{domain}/records
+        const patchUrl = `${baseUrl}/v1/domains/${domain}/records`;
+        console.error(`[GoDaddy MCP] Retrying with PATCH to ${patchUrl}`);
+        response = await fetch(patchUrl, {
+          method: 'PATCH',
+          headers: {
+            Authorization: authHeader,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify([{ type, name, data, ttl }]),
+        });
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -93,7 +115,7 @@ server.tool(
     try {
       const response = await fetch(url, {
         headers: {
-          Authorization: `sso-key ${apiKey}:${apiSecret}`,
+          Authorization: getAuthHeader(),
         },
       });
 
