@@ -1,0 +1,11 @@
+auction.himansh.co.in {
+    # Reverse proxy Socket.io WebSocket traffic
+    handle /socket.io/* {
+        reverse_proxy server:4000
+    }
+
+    # Reverse proxy Next.js frontend
+    handle {
+        reverse_proxy web:3000
+    }
+}

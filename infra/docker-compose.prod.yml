@@ -66,6 +66,23 @@ services:
     depends_on:
       - server
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: pulse-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - server
+      - web
+
 volumes:
   pgdata:
   redisdata:
+  caddy_data:
+  caddy_config:
