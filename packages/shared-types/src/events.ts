@@ -55,6 +55,7 @@ export interface ClientToServerEvents {
   'bid:submit': (payload: BidSubmissionPayload) => void;
   'auction:bid': (payload: BidSubmissionPayload) => void;
   'proxy_bid:set': (payload: ProxyBidConfig) => void;
+  'auction:reset': (payload: { auctionId: string; durationMinutes?: number }) => void;
 }
 
 export interface ServerToClientEvents {

@@ -35,26 +35,17 @@ export default function AuctionTerminalPage({ params }: AuctionPageProps) {
     activeProxyCeilingCents,
     setProxyCeiling,
     submitBid,
+    resetAuction,
     dismissOutbidAlert,
   } = useAuctionSocket(auctionId);
 
   const [isResetting, setIsResetting] = useState(false);
   const [isProxyModalOpen, setIsProxyModalOpen] = useState(false);
 
-  const handleResetDemoAuction = async () => {
+  const handleResetDemoAuction = () => {
     setIsResetting(true);
-    try {
-      const apiUrl = process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:4000';
-      await fetch(`${apiUrl}/api/auction/${auctionId}/reset`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ durationMinutes: 5 }),
-      });
-    } catch (err) {
-      console.error('Failed to reset demo auction:', err);
-    } finally {
-      setIsResetting(false);
-    }
+    resetAuction(5);
+    setTimeout(() => setIsResetting(false), 500);
   };
 
   if (isLoading && !auctionState) {

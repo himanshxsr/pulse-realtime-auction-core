@@ -152,6 +152,22 @@ export function setupSocketGateway(httpServer: HttpServer): Server<ClientToServe
     socket.on('bid:submit', handleBidSubmission);
     socket.on('auction:bid', handleBidSubmission);
 
+    socket.on('auction:reset', async (data: { auctionId: string; durationMinutes?: number }) => {
+      console.log('[SocketGateway] Received auction:reset request:', data);
+      const duration = data.durationMinutes || 5;
+      const updatedState = await bidEngine.resetDemoAuction(data.auctionId, duration);
+      const roomKey = `auction:${data.auctionId}`;
+      io.to(roomKey).emit('auction:state', updatedState);
+      const commentary: CommentaryMessage = {
+        id: `commentary_${Date.now()}`,
+        auctionId: data.auctionId,
+        text: `🔄 Auction clock reset for ${duration} minutes. Bidding is now LIVE!`,
+        timestamp: Date.now(),
+        type: 'BID',
+      };
+      io.to(roomKey).emit('auction:commentary', commentary);
+    });
+
     socket.on('disconnect', () => {
       console.log(`[SocketGateway] Client disconnected: ${socket.id}`);
       for (const [auctionId, participants] of roomParticipants.entries()) {

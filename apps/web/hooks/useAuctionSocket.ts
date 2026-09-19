@@ -39,6 +39,7 @@ export interface UseAuctionSocketReturn {
   activeProxyCeilingCents: number | null;
   setProxyCeiling: (maxCents: number | null) => void;
   submitBid: (amountCents: number) => void;
+  resetAuction: (durationMinutes?: number) => void;
   dismissOutbidAlert: () => void;
 }
 
@@ -110,6 +111,18 @@ export function useAuctionSocket(auctionId: string): UseAuctionSocketReturn {
 
   const submitBidRef = useRef(submitBid);
   submitBidRef.current = submitBid;
+
+  const resetAuction = useCallback(
+    (durationMinutes = 5) => {
+      if (socketRef.current?.connected) {
+        console.log('[Web Socket] Emitting auction:reset for', auctionId, 'duration:', durationMinutes);
+        socketRef.current.emit('auction:reset', { auctionId, durationMinutes });
+      } else {
+        console.warn('[Web Socket] Cannot emit auction:reset - socket disconnected');
+      }
+    },
+    [auctionId]
+  );
 
   useEffect(() => {
     if (!auctionId) return;
@@ -275,6 +288,7 @@ export function useAuctionSocket(auctionId: string): UseAuctionSocketReturn {
     activeProxyCeilingCents,
     setProxyCeiling,
     submitBid,
+    resetAuction,
     dismissOutbidAlert,
   };
 }
